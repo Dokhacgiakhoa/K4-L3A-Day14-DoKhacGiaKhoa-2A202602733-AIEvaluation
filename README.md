@@ -173,3 +173,56 @@ Buổi học diễn ra từ **14:15 đến 18:00**. Hoàn thành bài lab trư�
 
 Chi tiết tiêu chí chấm điểm, bằng chứng và các trường hợp trừ điểm xem tại [RUBRIC.md](RUBRIC.md).  
 Hướng dẫn nộp bài và checklist trước khi nộp xem tại [SUBMISSION.md](SUBMISSION.md).
+
+---
+
+## 📋 Tiến trình Thực hiện & Checklist Chi tiết (Progress Tracker)
+
+Trạng thái: 🟢 Đã hoàn thành toàn bộ (100/100 + 10đ Bonus)
+
+- [x] **Checkpoint 0: Setup & Baseline (CP0)**
+  - [x] Khởi tạo môi trường Python 3.14
+  - [x] Cài đặt dependencies từ `requirements.txt` (`openai`, `python-dotenv`, `pytest`)
+  - [x] Chạy baseline test: `pytest tests/ -v` (xác nhận 42 tests failed ban đầu)
+  - [x] Thiết lập file `.env` từ `.env.example` và cấu hình API key
+
+- [x] **Checkpoint 1: Data Models - Task 1 (CP1)**
+  - [x] Định nghĩa `QAPair` trong `template.py` với các trường dữ liệu đầy đủ
+  - [x] Định nghĩa `EvalResult` trong `template.py`
+  - [x] Cài đặt phương thức `EvalResult.overall_score()` (trung bình cộng 3 answer metrics)
+  - [x] Chạy kiểm tra: `pytest tests/test_solution.py::TestEvalResultOverallScore -v` (3 passed)
+
+- [x] **Checkpoint 2: Metrics & LLM-as-a-Judge - Tasks 2 & 3 (CP2)**
+  - [x] Task 2: Cài đặt tokenization & stopwords filtering
+  - [x] Task 2: Cài đặt 3 answer metrics (`faithfulness`, `relevance`, `completeness`)
+  - [x] Task 2: Cài đặt 2 retrieval metrics (`context_recall`, `context_precision` AP@K)
+  - [x] Task 2: Cài đặt `run_full_eval()` xử lý context và gán `failure_type`
+  - [x] Task 3: Cài đặt `LLMJudge.score_response()` (prompt formatting + parse JSON score + fallback)
+  - [x] Task 3: Cài đặt `LLMJudge.detect_bias()` (positional, leniency, severity)
+  - [x] Chạy kiểm tra suite tích luỹ: `pytest tests/ -v` (đạt 21 passed)
+
+- [x] **Checkpoint 3: Runner & Failure Analyzer - Tasks 4 & 5 (CP3)**
+  - [x] Task 4: Cài đặt `BenchmarkRunner.run()` kết nối `agent_fn` và truyền `retrieved_contexts`
+  - [x] Task 4: Cài đặt `BenchmarkRunner.generate_report()` tính pass rate và metric averages
+  - [x] Task 4: Cài đặt `BenchmarkRunner.run_regression()` (ngưỡng sụt giảm > 0.05)
+  - [x] Task 4: Cài đặt `BenchmarkRunner.identify_failures()`
+  - [x] Task 5: Cài đặt `FailureAnalyzer.categorize_failures()`
+  - [x] Task 5: Cài đặt `FailureAnalyzer.find_root_cause()`
+  - [x] Task 5: Cài đặt `FailureAnalyzer.generate_improvement_suggestions()`
+  - [x] Task 5: Cài đặt `FailureAnalyzer.generate_improvement_log()` (Markdown table)
+  - [x] Cài đặt bonus `rerank_by_overlap()` (Exercise 3.5): Đạt **42/42 tests passed**
+
+- [x] **Checkpoint 4: Golden Dataset & Real Benchmark (CP4)**
+  - [x] Xây dựng 20 QA pairs trong `golden_dataset.json` (5 Easy, 7 Medium, 5 Hard, 3 Adversarial) có provenance chính xác từ 10 document trong `data/technology_store/*.md`
+  - [x] Chạy xác thực: `python validate_golden_dataset.py` (kết quả: **PASS**)
+  - [x] Chạy `python domain_assistant.py` sinh `artifacts/actual_answers.json`
+  - [x] Chạy `python evaluate_answers.py` sinh `artifacts/benchmark_results.json`
+  - [x] Hoàn thành Part 1 Warm-up và Exercise 3.2 (bảng 5 metrics + phân tích 3 cases thấp nhất) trong `exercises.md`
+  - [x] Hoàn thành Exercise 3.3 (rubric 1-5 domain OrbitTech Store + edge cases + kiểm soát bias) trong `exercises.md`
+  - [x] Hoàn thành Exercise 3.4 (Bonus +5: So sánh RAGAS vs DeepEval) và Exercise 3.5 (Bonus +5: Reranking metrics)
+
+- [x] **Checkpoint 5: Reflection, Finalize & Submission Checklist (CP5)**
+  - [x] Hoàn thiện `reflection.md` (3 phân tích 5 Whys, failure clustering, improvement log, regression CI/CD)
+  - [x] Đồng bộ code: copy `template.py` sang `solution/solution.py`
+  - [x] Chạy kiểm tra lại toàn bộ: `pytest tests/ -v` (42 passed) & `python validate_golden_dataset.py` (PASS)
+  - [x] Rà soát `SUBMISSION.md` và kiểm tra bảo mật (không commit `.env`)

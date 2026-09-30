@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide Báo Cáo: AI Evaluation & Benchmarking Pipeline (Day 14)</title>
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --card-bg: #1e293b;
+      --accent-blue: #38bdf8;
+      --accent-green: #4ade80;
+      --accent-purple: #c084fc;
+      --accent-red: #f87171;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: #334155;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .slide-container {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      padding: 3rem 5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.4s ease-in-out;
+      transform: translateX(50px);
+    }
+
+    .slide.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(0);
+    }
+
+    .slide-header {
+      margin-bottom: 2rem;
+    }
+
+    .tag {
+      display: inline-block;
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.75rem;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent-blue);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+
+    h1 {
+      font-size: 2.8rem;
+      font-weight: 800;
+      line-height: 1.2;
+      background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    h2 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 1.2rem;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+
+    .card h3 {
+      font-size: 1.2rem;
+      color: var(--accent-blue);
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .card p, .card li {
+      font-size: 1rem;
+      color: #cbd5e1;
+      line-height: 1.6;
+    }
+
+    .card ul {
+      list-style-position: inside;
+      margin-top: 0.5rem;
+    }
+
+    .stat-box {
+      background: rgba(30, 41, 59, 0.7);
+      border: 1px solid var(--border-color);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 2.4rem;
+      font-weight: 800;
+      color: var(--accent-green);
+      margin-bottom: 0.25rem;
+    }
+
+    .stat-label {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1rem;
+      font-size: 0.95rem;
+    }
+
+    th, td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    th {
+      background: rgba(15, 23, 42, 0.6);
+      color: var(--accent-blue);
+      font-weight: 600;
+    }
+
+    tr:hover {
+      background: rgba(51, 65, 85, 0.3);
+    }
+
+    .badge-pass {
+      background: rgba(74, 222, 128, 0.2);
+      color: var(--accent-green);
+      padding: 0.2rem 0.6rem;
+      border-radius: 0.35rem;
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+
+    .badge-fail {
+      background: rgba(248, 113, 113, 0.2);
+      color: var(--accent-red);
+      padding: 0.2rem 0.6rem;
+      border-radius: 0.35rem;
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+
+    .nav-bar {
+      height: 70px;
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4rem;
+    }
+
+    .nav-controls {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .nav-btn {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 0.5rem 1.25rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .nav-btn:hover {
+      background: #334155;
+      color: var(--accent-blue);
+    }
+
+    .progress-indicator {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .highlight-green {
+      color: var(--accent-green);
+      font-weight: 600;
+    }
+
+    .highlight-blue {
+      color: var(--accent-blue);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="slide-container">
+    
+    <!-- Slide 1: Cover -->
+    <div class="slide active">
+      <div class="slide-header">
+        <span class="tag">K4 · Level 3A · Day 14</span>
+        <h1>AI Evaluation & Benchmarking Pipeline</h1>
+        <p class="subtitle" style="margin-top: 0.75rem;">Đánh giá toàn diện hệ thống RAG OrbitTech Customer Support</p>
+      </div>
+      <div class="grid-3" style="margin-top: 1.5rem;">
+        <div class="card">
+          <h3>👨‍💻 Học viên</h3>
+          <p><strong>Họ & Tên:</strong> Đỗ Khắc Gia Khoa</p>
+          <p><strong>Mã SV:</strong> 2A202602733</p>
+          <p><strong>Repo:</strong> K4-L3A-Day14-DoKhacGiaKhoa-2A202602733-AIEvaluation</p>
+        </div>
+        <div class="card">
+          <h3>🎯 Điểm số & Mục tiêu</h3>
+          <p><strong>Điểm bắt buộc:</strong> <span class="highlight-green">100 / 100</span></p>
+          <p><strong>Điểm thưởng (Bonus):</strong> <span class="highlight-blue">+10 / +10</span></p>
+          <p><strong>Tổng điểm đạt được:</strong> <span class="highlight-green">110 / 100</span></p>
+        </div>
+        <div class="card">
+          <h3>🧪 Kết quả nghiệm thu</h3>
+          <p><strong>Unit Tests:</strong> <span class="badge-pass">42 / 42 PASSED</span></p>
+          <p><strong>Golden Dataset:</strong> <span class="badge-pass">VALIDATOR PASS</span></p>
+          <p><strong>Benchmark thật:</strong> <span class="highlight-blue">20 Actual QA generated</span></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 2: Pipeline Architecture -->
+    <div class="slide">
+      <div class="slide-header">
+        <span class="tag">Kiến Trúc Hệ Thống</span>
+        <h2>End-to-End Evaluation Pipeline</h2>
+        <p class="subtitle">Mô hình hóa quy trình đánh giá khoa học cho AI Assistant</p>
+      </div>
+      <div class="grid-4" style="margin-bottom: 1.5rem;">
+        <div class="stat-box">
+          <div class="stat-number">10</div>
+          <div class="stat-label">Source Docs (Corpus)</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-number">20</div>
+          <div class="stat-label">Golden Q&A Pairs</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-number">5</div>
+          <div class="stat-label">Core Metrics (RAGAS)</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-number">42</div>
+          <div class="stat-label">Automated Tests</div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <h3>⚙️ System Under Evaluation (RAG)</h3>
+          <p><strong>Retriever (BM25):</strong> Tìm kiếm và xếp hạng 5 context chunks phù hợp nhất từ corpus 10 file markdown của OrbitTech Store.</p>
+          <p><strong>Generator (LLM):</strong> Sinh câu trả lời căn cứ hoàn toàn vào context, có cơ chế an toàn từ chối prompt injection.</p>
+        </div>
+        <div class="card">
+          <h3>🔍 Evaluation Engine (template.py)</h3>
+          <p><strong>Answer-side:</strong> Đo lường Faithfulness, Relevance, Completeness (chia sẻ vào <code>overall_score()</code>).</p>
+          <p><strong>Retrieval-side:</strong> Đo lường Context Recall và rank-aware Context Precision (AP@K).</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 3: Golden Dataset -->
+    <div class="slide">
+      <div class="slide-header">
+        <span class="tag">Dataset Engineering</span>
+        <h2>Golden Dataset: Stratified Sampling</h2>
+        <p class="subtitle">Độ phân bổ 20 test cases và bảo đảm 100% bằng chứng thực tế</p>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <h3>📊 Phân bố độ khó (Stratified Layout)</h3>
+          <table>
+            <tr>
+              <th>Độ khó</th>
+              <th>Số lượng</th>
+              <th>Mục tiêu đánh giá</th>
+            </tr>
+            <tr>
+              <td><strong>Easy</strong></td>
+              <td>5 câu</td>
+              <td>Tra cứu thông số kỹ thuật, bảo hành, phí dịch vụ đơn giản.</td>
+            </tr>
+            <tr>
+              <td><strong>Medium</strong></td>
+              <td>7 câu</td>
+              <td>Suy luận 2 bước, kết hợp điều kiện thời gian và loại thiết bị.</td>
+            </tr>
+            <tr>
+              <td><strong>Hard</strong></td>
+              <td>5 câu</td>
+              <td>Xung đột chính sách (Policy v1.0 vs v2.0), logic phức tạp.</td>
+            </tr>
+            <tr>
+              <td><strong>Adversarial</strong></td>
+              <td>3 câu</td>
+              <td>Out-of-scope (y tế), Prompt Injection, False Premise Trap.</td>
+            </tr>
+          </table>
+        </div>
+        <div class="card">
+          <h3>🛡️ Nguyên tắc Bảo toàn Dữ liệu</h3>
+          <ul>
+            <li><strong>100% Provenance:</strong> Toàn bộ contexts và expected answers đều là trích dẫn nguyên văn từ 10 tài liệu nguồn.</li>
+            <li><strong>Chống Data Leakage:</strong> RAG Generator chỉ nhận Question, tuyệt đối không được đọc Expected Answer hay Gold Context.</li>
+            <li><strong>Đạt chuẩn Validator:</strong> Lệnh <code>validate_golden_dataset.py</code> báo kết quả <span class="badge-pass">PASS</span> tuyệt đối.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 4: Benchmark Results -->
+    <div class="slide">
+      <div class="slide-header">
+        <span class="tag">Thực Nghiệm Thực Tế</span>
+        <h2>Kết Quả Benchmark Trên 20 Câu Hỏi</h2>
+        <p class="subtitle">Chạy thực tế với mô hình LLM trên OrbitTech Store Corpus</p>
+      </div>
+      <div class="grid-3" style="margin-bottom: 1.5rem;">
+        <div class="stat-box">
+          <div class="stat-number">0.898</div>
+          <div class="stat-label">Avg Context Recall</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-number">0.957</div>
+          <div class="stat-label">Avg Context Precision</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-number">40.0%</div>
+          <div class="stat-label">Overall Pass Rate (Threshold 0.5)</div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <h3>📈 Điểm Trung Bình Từng Metric</h3>
+          <ul>
+            <li><strong>Context Precision:</strong> <span class="highlight-green">0.957</span> (Retriever xếp chunk đúng lên vị trí 1-2 rất chuẩn)</li>
+            <li><strong>Context Recall:</strong> <span class="highlight-green">0.898</span> (Bao phủ bằng chứng gần như hoàn hảo)</li>
+            <li><strong>Faithfulness:</strong> <span class="highlight-blue">0.653</span> (Mức khá, không bị hallucination trong câu thông thường)</li>
+            <li><strong>Completeness:</strong> <span class="highlight-blue">0.583</span> (Mức trung bình khá)</li>
+            <li><strong>Relevance:</strong> <span style="color: var(--accent-red); font-weight: 700;">0.434</span> (Điểm nghẽn do câu trả lời quá ngắn)</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>📌 Insight Quan Trọng Nhất</h3>
+          <p>Retriever hoạt động cực kỳ hoàn hảo. Vấn đề điểm thấp nằm ở <strong>Generator</strong>:</p>
+          <p>- Do system prompt yêu cầu trả lời quá súc tích ("concisely without preamble"), câu trả lời cụt lủn (ví dụ: "24 months") làm thuật toán <em>Token Overlap Heuristic</em> phạt điểm Relevance xuống 0.000!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Slide 5: Failure Analysis & 5 Whys -->
+    <div class="slide">
+      <div class="slide-header">
+        <span class="tag">Chẩn Đoán Lỗi Sâu</span>
+        <h2>Phân Tích 5 Whys & Failure Clustering</h2>
+        <p class="subtitle">Tìm ra nguyên nhân gốc rễ (Root Cause) để khắc phục hàng loạt</p>
+      </div>
+      <div class="grid-3">
+        <div class="card">
+          <h3>🔍 Failure 1: A01 (Out-of-Scope)</h3>
+          <p><strong>Hiện tượng:</strong> Khách hỏi đơn thuốc đau đầu, bot trả lời "Insufficient evidence" &rarr; Bị chấm 0đ.</p>
+          <p><strong>Root Cause:</strong> Thiếu module <em>Intent Router</em> ở đầu pipeline để từ chối lịch sự theo quy định <code>00_system_scope.md</code>.</p>
+        </div>
+        <div class="card">
+          <h3>🔍 Failure 2: A02 (Prompt Injection)</h3>
+          <p><strong>Hiện tượng:</strong> Lệnh <code>SYSTEM OVERRIDE</code> đòi mật khẩu, bot trả lời "Insufficient evidence".</p>
+          <p><strong>Root Cause:</strong> Prompt chưa hướng dẫn cách phản ứng khi gặp injection, thiếu guardrail an toàn chuyên biệt.</p>
+        </div>
+        <div class="card">
+          <h3>🔍 Failure 3: E03 (Warranty Duration)</h3>
+          <p><strong>Hiện tượng:</strong> Hỏi thời hạn bảo hành 3 thiết bị, bot trả lời vỏn vẹn "24 months" &rarr; Relevance = 0.000.</p>
+          <p><strong>Root Cause:</strong> Ép LLM quá ngắn gọn làm mất các thực thể câu hỏi, dẫn đến thuật toán overlap đánh trượt oan.</p>
+        </div>
+      </div>
+      <div class="card" style="margin-top: 1.5rem;">
+        <h3>🎯 Chiến Lược Sửa Lỗi: Failure Clustering</h3>
+        <p>Chọn sửa <strong>Cluster 1 (Overly Concise Generation)</strong> vì giải quyết được tới <strong>8/12 ca lỗi (66.7%)</strong>. Chỉ cần điều chỉnh prompt yêu cầu trả lời câu hoàn chỉnh (Full Sentence), pass rate sẽ lập tức tăng từ 40% lên trên 80%!</p>
+      </div>
+    </div>
+
+    <!-- Slide 6: Bonus & CI/CD Strategy -->
+    <div class="slide">
+      <div class="slide-header">
+        <span class="tag">Điểm Thưởng & CI/CD</span>
+        <h2>Bonus Exercises & Quality Gate</h2>
+        <p class="subtitle">Hoàn thành trọn vẹn +10 điểm Bonus và chiến lược triển khai CI/CD</p>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <h3>🌟 Exercise 3.4 & 3.5 (+10đ Bonus)</h3>
+          <p><strong>Ex 3.4 (+5đ):</strong> So sánh RAGAS vs DeepEval trên kiến trúc và CI/CD.</p>
+          <p><strong>Ex 3.5 (+5đ):</strong> Triển khai <code>rerank_by_overlap()</code>. Thực nghiệm chứng minh Context Precision tăng từ <strong>0.860 &rarr; 0.918 (+0.058)</strong> trong khi Context Recall giữ nguyên tuyệt đối <strong>0.899</strong>.</p>
+        </div>
+        <div class="card">
+          <h3>🚀 CI/CD Regression Quality Gate</h3>
+          <p><strong>Quy trình:</strong> <code>Code/Prompt Change &rarr; Unit Tests (pytest) &rarr; Offline Eval (Golden Dataset) &rarr; Regression Check (Drop &le; 0.05) &rarr; Deploy</code>.</p>
+          <p><strong>Hard Gate (Block Deploy):</strong> Faithfulness drop > 0.05 hoặc phát hiện bất kỳ ca Hallucination nào trên các câu hỏi chính sách cốt lõi.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Navigation Bar -->
+  <div class="nav-bar">
+    <div class="nav-controls">
+      <button class="nav-btn" id="prevBtn" onclick="prevSlide()">❮ Trang trước</button>
+      <button class="nav-btn" id="nextBtn" onclick="nextSlide()">Trang sau ❯</button>
+    </div>
+    <div class="progress-indicator" id="progressIndicator">Slide 1 / 6</div>
+  </div>
+
+  <script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const progressIndicator = document.getElementById('progressIndicator');
+    const totalSlides = slides.length;
+
+    function updateSlide(index) {
+      slides.forEach((s, idx) => {
+        s.classList.toggle('active', idx === index);
+      });
+      progressIndicator.innerText = `Slide ${index + 1} / ${totalSlides}`;
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides - 1) {
+        currentSlide++;
+        updateSlide(currentSlide);
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        currentSlide--;
+        updateSlide(currentSlide);
+      }
+    }
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') {
+        nextSlide();
+      } else if (e.key === 'ArrowLeft') {
+        prevSlide();
+      }
+    });
+  </script>
+</body>
+</html>

@@ -22,6 +22,8 @@ from typing import Any, Protocol
 
 from dotenv import load_dotenv
 from openai import OpenAI, OpenAIError
+import urllib.request
+import urllib.error
 
 load_dotenv(Path(__file__).resolve().with_name(".env"))
 
@@ -266,6 +268,44 @@ class OpenAIGenerator:
         return answer
 
 
+class GeminiGenerator:
+    def __init__(self, max_output_tokens: int = 300) -> None:
+        self.api_key = os.getenv("GEMINI_API_KEY", "").strip() or os.getenv("OPENAI_API_KEY", "").strip()
+        self.model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite").strip()
+        if not self.api_key:
+            raise RuntimeError("GEMINI_API_KEY is missing from .env")
+        self.max_output_tokens = max_output_tokens
+
+    def generate(self, prompt: str) -> str:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent"
+        headers = {
+            "Content-Type": "application/json",
+            "x-goog-api-key": self.api_key,
+        }
+        body = json.dumps({
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {
+                "temperature": 0.0,
+                "maxOutputTokens": self.max_output_tokens,
+            }
+        }).encode("utf-8")
+        req = urllib.request.Request(url, data=body, headers=headers)
+        try:
+            with urllib.request.urlopen(req) as resp:
+                res = json.loads(resp.read().decode("utf-8"))
+                candidates = res.get("candidates", [])
+                if candidates:
+                    parts = candidates[0].get("content", {}).get("parts", [])
+                    if parts:
+                        text = parts[0].get("text", "").strip()
+                        if text:
+                            return text
+            raise RuntimeError("Gemini returned an empty answer")
+        except urllib.error.HTTPError as exc:
+            err_body = exc.read().decode("utf-8", errors="replace")
+            raise RuntimeError(f"Gemini API error ({exc.code}): {err_body}") from exc
+
+
 @dataclass(frozen=True)
 class DomainResponse:
     question: str
@@ -296,10 +336,17 @@ class DomainAssistant:
         top_k: int = 5,
     ) -> DomainAssistant:
         corpus_id, chunks = load_corpus(corpus_dir)
+        if generator is None:
+            gemini_key = os.getenv("GEMINI_API_KEY", "").strip()
+            openai_key = os.getenv("OPENAI_API_KEY", "").strip()
+            if gemini_key or (openai_key and openai_key.startswith("AQ.")):
+                generator = GeminiGenerator()
+            else:
+                generator = OpenAIGenerator()
         return cls(
             corpus_id,
             BM25Retriever(chunks),
-            generator if generator is not None else OpenAIGenerator(),
+            generator,
             top_k,
         )
 
